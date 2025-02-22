@@ -64,7 +64,7 @@ class IsolationForestCustom:
 
 # 🔹 Load the Model with Explicit Reference to Custom Class
 with open("custom_isolation_forest.pkl", "rb") as file:
-    iso_forest = pickle.load(file)
+    iso_forest = pickle.load(file, globals())  # ✅ Fix: Ensures correct class reference
 
 # 🔹 Load the category encoder
 with open("category_encoder.pkl", "rb") as file:
