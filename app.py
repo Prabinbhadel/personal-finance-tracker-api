@@ -3,7 +3,7 @@ import pickle
 import numpy as np
 from flask_cors import CORS
 
-# Step 1: Define the Custom Isolation Forest Classes
+# 🔹 Define the Isolation Tree (Same as used during training)
 class IsolationTree:
     def __init__(self, max_depth):
         self.max_depth = max_depth
@@ -34,6 +34,7 @@ class IsolationTree:
         else:
             return 1 + self.right.path_length(X)
 
+# 🔹 Define the Isolation Forest Custom Model
 class IsolationForestCustom:
     def __init__(self, n_trees=100, max_depth=10):
         self.n_trees = n_trees
@@ -61,15 +62,14 @@ class IsolationForestCustom:
         scores = self.anomaly_score(X)
         return np.where(scores > threshold, -1, 1)
 
-# Step 2: Load the Trained Model
+# 🔹 Now Load the Model After Defining Classes
 with open("custom_isolation_forest.pkl", "rb") as file:
     iso_forest = pickle.load(file)
 
-# Load the category encoder
 with open("category_encoder.pkl", "rb") as file:
     category_encoder = pickle.load(file)
 
-# Step 3: Flask API
+# Flask API Setup
 app = Flask(__name__)
 CORS(app)
 
@@ -83,7 +83,7 @@ def detect_anomalies():
         results = []
         for transaction in transactions:
             cuid = transaction.get("cuid")
-            date = transaction.get("date")  # Now placed second
+            date = transaction.get("date")
             category = transaction.get("category")
             amount = transaction.get("amount")
             description = transaction.get("description")
