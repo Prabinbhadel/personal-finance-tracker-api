@@ -3,7 +3,7 @@ import pickle
 import numpy as np
 from flask_cors import CORS
 
-# 🔹 Define the Isolation Tree (Same as used during training)
+# 🔹 Define the Isolation Tree Class (Same as used during training)
 class IsolationTree:
     def __init__(self, max_depth):
         self.max_depth = max_depth
@@ -34,7 +34,7 @@ class IsolationTree:
         else:
             return 1 + self.right.path_length(X)
 
-# 🔹 Define the Isolation Forest Custom Model
+# 🔹 Define the Custom Isolation Forest Model
 class IsolationForestCustom:
     def __init__(self, n_trees=100, max_depth=10):
         self.n_trees = n_trees
@@ -62,10 +62,11 @@ class IsolationForestCustom:
         scores = self.anomaly_score(X)
         return np.where(scores > threshold, -1, 1)
 
-# 🔹 Now Load the Model After Defining Classes
+# 🔹 Load the Model with Explicit Reference to Custom Class
 with open("custom_isolation_forest.pkl", "rb") as file:
     iso_forest = pickle.load(file)
 
+# 🔹 Load the category encoder
 with open("category_encoder.pkl", "rb") as file:
     category_encoder = pickle.load(file)
 
