@@ -1,9 +1,11 @@
-import dill
 from flask import Flask, request, jsonify
+import dill as pickle  # Using dill for better handling of custom classes
 import numpy as np
 from flask_cors import CORS
+import sys
 
-# ✅ Define IsolationForestCustom class before loading the model
+# ----- Define your custom classes (must match those used when training) -----
+
 class IsolationTree:
     def __init__(self, max_depth):
         self.max_depth = max_depth
@@ -61,15 +63,19 @@ class IsolationForestCustom:
         scores = self.anomaly_score(X)
         return np.where(scores > threshold, -1, 1)
 
-# ✅ Explicitly load the model using dill and globals() to resolve class references
+# ----- Hack: Ensure that the custom classes are available in __main__ -----
+# This is necessary because the model was saved with __main__ as the module name.
+sys.modules['__main__'].IsolationForestCustom = IsolationForestCustom
+sys.modules['__main__'].IsolationTree = IsolationTree
+
+# ----- Load the model and encoder using dill -----
 with open("custom_isolation_forest.pkl", "rb") as file:
-    iso_forest = dill.load(file, ignore=True)
+    iso_forest = pickle.load(file)
 
-# ✅ Load the category encoder
 with open("category_encoder.pkl", "rb") as file:
-    category_encoder = dill.load(file)
+    category_encoder = pickle.load(file)
 
-# Flask API Setup
+# ----- Flask API Setup -----
 app = Flask(__name__)
 CORS(app)
 
@@ -104,10 +110,8 @@ def detect_anomalies():
                 })
                 continue
 
-            # Prepare input data
+            # Prepare input data for prediction
             X_input = np.array([[category_encoded, amount]])
-
-            # Predict anomaly (-1 = anomalous, 1 = normal)
             prediction = iso_forest.predict(X_input)
             status = "anomalous" if prediction[0] == -1 else "normal"
 
@@ -121,7 +125,6 @@ def detect_anomalies():
             })
 
         return jsonify(results)
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
