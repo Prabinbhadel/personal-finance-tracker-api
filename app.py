@@ -1,9 +1,9 @@
+import dill
 from flask import Flask, request, jsonify
-import dill as pickle  # ✅ Use `dill` for proper loading
 import numpy as np
 from flask_cors import CORS
 
-# ✅ Define Custom Isolation Forest Model (Same as Used in Training)
+# ✅ Define IsolationForestCustom class before loading the model
 class IsolationTree:
     def __init__(self, max_depth):
         self.max_depth = max_depth
@@ -61,17 +61,17 @@ class IsolationForestCustom:
         scores = self.anomaly_score(X)
         return np.where(scores > threshold, -1, 1)
 
-# ✅ Initialize Flask App
+# ✅ Explicitly load the model using dill and globals() to resolve class references
+with open("custom_isolation_forest.pkl", "rb") as file:
+    iso_forest = dill.load(file, ignore=True)
+
+# ✅ Load the category encoder
+with open("category_encoder.pkl", "rb") as file:
+    category_encoder = dill.load(file)
+
+# Flask API Setup
 app = Flask(__name__)
 CORS(app)
-
-# ✅ Load the Model (After Defining the Class)
-with open("custom_isolation_forest.pkl", "rb") as file:
-    iso_forest = pickle.load(file)
-
-# ✅ Load the Category Encoder
-with open("category_encoder.pkl", "rb") as file:
-    category_encoder = pickle.load(file)
 
 @app.route("/detect_anomalies", methods=["POST"])
 def detect_anomalies():
@@ -88,12 +88,11 @@ def detect_anomalies():
             amount = transaction.get("amount")
             description = transaction.get("description")
 
-            # ✅ Validate Input (Check for missing values)
             if not cuid or not date or not category or amount is None or not description:
                 results.append({"cuid": cuid, "status": "error: missing values"})
                 continue
 
-            # ✅ Convert category to numeric encoding
+            # Convert category to numeric encoding
             if category in category_encoder:
                 category_encoded = category_encoder[category]
             else:
@@ -105,10 +104,10 @@ def detect_anomalies():
                 })
                 continue
 
-            # ✅ Prepare input data for model
+            # Prepare input data
             X_input = np.array([[category_encoded, amount]])
 
-            # ✅ Predict anomaly (-1 = anomalous, 1 = normal)
+            # Predict anomaly (-1 = anomalous, 1 = normal)
             prediction = iso_forest.predict(X_input)
             status = "anomalous" if prediction[0] == -1 else "normal"
 
