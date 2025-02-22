@@ -102,31 +102,25 @@ def detect_anomalies():
             if category in category_encoder:
                 category_encoded = category_encoder[category]
             else:
-                results.append({
-                    "cuid": cuid,
-                    "date": date,
-                    "status": "error: unknown category",
-                    "available_categories": list(category_encoder.keys())
-                })
+                transaction["status"] = "unknown"
+                results.append(transaction)
                 continue
 
-            # Prepare input data for prediction
+            # Prepare input data
             X_input = np.array([[category_encoded, amount]])
+
+            # Predict anomaly (-1 = anomalous, 1 = normal)
             prediction = iso_forest.predict(X_input)
             status = "anomalous" if prediction[0] == -1 else "normal"
 
-            results.append({
-                "cuid": cuid,
-                "date": date,
-                "category": category,
-                "amount": amount,
-                "description": description,
-                "status": status
-            })
+            transaction["status"] = status
+            results.append(transaction)
 
         return jsonify(results)
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
     app.run(debug=True)
